@@ -2,8 +2,10 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import get_settings
 from app.database import create_tables, engine, AsyncSessionLocal, User
@@ -14,7 +16,10 @@ from app.routes import router as main_router
 from sqlalchemy import select
 import uuid
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 
@@ -28,6 +33,12 @@ def validate_startup():
     if missing:
         logger.error(f"Missing required environment variables: {', '.join(missing)}")
         sys.exit(1)
+
+    if settings.environment.lower() == "production":
+        if "secret_here" in settings.jwt_secret or len(settings.jwt_secret) < 32:
+            logger.error("In production, JWT_SECRET must be at least 32 characters and not a placeholder.")
+            sys.exit(1)
+    logger.info(f"Configuration loaded. Environment: {settings.environment}, Secure cookies: {settings.is_cookie_secure}")
 
 
 async def seed_admin():
@@ -65,15 +76,35 @@ async def lifespan(app: FastAPI):
 
 settings = get_settings()
 
-app = FastAPI(title="Chat with PDF", lifespan=lifespan)
+app = FastAPI(title="Chat with PDF API", lifespan=lifespan)
 
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_origin],
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Exception handlers
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=getattr(exc, "headers", None),
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled server error: %s", exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred. Please try again later."},
+    )
+
 
 app.include_router(auth_router)
 app.include_router(admin_router)

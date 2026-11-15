@@ -10,6 +10,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    event,
 )
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -122,11 +123,20 @@ class Document(Base):
 
 def _make_engine():
     settings = get_settings()
-    return create_async_engine(
+    eng = create_async_engine(
         settings.database_url,
         echo=False,
         future=True,
     )
+    if "sqlite" in settings.database_url:
+        @event.listens_for(eng.sync_engine, "connect")
+        def set_sqlite_pragma(dbapi_connection, connection_record):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA busy_timeout=5000")
+            cursor.close()
+    return eng
 
 
 engine = _make_engine()

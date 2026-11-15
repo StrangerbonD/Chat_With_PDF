@@ -117,19 +117,27 @@ def _sha256(value: str) -> str:
 
 
 def _set_refresh_cookie(response: Response, token: str, max_age: int) -> None:
+    s = get_settings()
     response.set_cookie(
         key=_COOKIE_NAME,
         value=token,
         httponly=True,
         samesite="lax",
-        secure=settings.cookie_secure,
+        secure=s.is_cookie_secure,
         path=_COOKIE_PATH,
         max_age=max_age,
     )
 
 
 def _clear_refresh_cookie(response: Response) -> None:
-    response.delete_cookie(key=_COOKIE_NAME, path=_COOKIE_PATH)
+    s = get_settings()
+    response.delete_cookie(
+        key=_COOKIE_NAME,
+        path=_COOKIE_PATH,
+        httponly=True,
+        samesite="lax",
+        secure=s.is_cookie_secure,
+    )
 
 
 async def _get_user_by_email(

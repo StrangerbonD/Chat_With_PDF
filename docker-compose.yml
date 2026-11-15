@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - COOKIE_SECURE=false
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/chat_pdf.db
+      - CHROMA_PATH=/app/data/chroma
+      - FRONTEND_ORIGIN=http://localhost,http://localhost:80,http://localhost:5173
+    env_file:
+      - ./backend/.env
+    volumes:
+      - app_data:/app/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  app_data:

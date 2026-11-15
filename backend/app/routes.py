@@ -44,17 +44,20 @@ async def upload_pdf(
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(400, "Only PDF files are allowed")
 
-    # Read file content
-    pdf_bytes = await file.read()
+    # Read file content safely in chunks to avoid memory exhaustion
+    max_bytes = settings.max_file_mb * 1024 * 1024
+    content = bytearray()
+    chunk_size = 1024 * 1024  # 1MB chunks
+    while chunk := await file.read(chunk_size):
+        content.extend(chunk)
+        if len(content) > max_bytes:
+            raise HTTPException(413, f"File exceeds maximum size of {settings.max_file_mb} MB")
+
+    pdf_bytes = bytes(content)
 
     # Validate magic bytes
     if not pdf_bytes.startswith(b"%PDF"):
         raise HTTPException(400, "File does not appear to be a valid PDF")
-
-    # Validate size
-    max_bytes = settings.max_file_mb * 1024 * 1024
-    if len(pdf_bytes) > max_bytes:
-        raise HTTPException(413, f"File exceeds maximum size of {settings.max_file_mb} MB")
 
     # Extract text using safe temporary file
     pages = extract_text_with_temp_file(pdf_bytes)  # raises HTTPException if no text
