@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     admin_password: str = ""
     max_file_mb: int = 20
     max_pages: int = 200
+    brevo_api_key: str = ""
+    resend_api_key: str = ""
 
     @property
     def is_cookie_secure(self) -> bool:
