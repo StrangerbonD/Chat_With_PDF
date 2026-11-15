@@ -1,0 +1,33 @@
+# .gitignore
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.env
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# ChromaDB
+chroma_data/
+
+# Node
+node_modules/
+dist/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
