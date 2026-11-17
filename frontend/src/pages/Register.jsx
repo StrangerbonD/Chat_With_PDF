@@ -19,8 +19,10 @@ export default function Register() {
     setError('')
     setLoading(true)
     try {
-      await api.post('/api/auth/register', form)
-      navigate('/verify-email', { state: { email: form.email } })
+      const res = await api.post('/api/auth/register', form)
+      navigate('/verify-email', {
+        state: { email: form.email, code: res.data?.code },
+      })
     } catch (err) {
       const msg = err.response?.data?.detail
       setError(typeof msg === 'string' ? msg : 'Registration failed.')

@@ -8,7 +8,8 @@ export default function VerifyEmail() {
   const location = useLocation()
   const { theme, toggleTheme } = useTheme()
   const [email, setEmail] = useState(location.state?.email || '')
-  const [code, setCode] = useState('')
+  const [code, setCode] = useState(location.state?.code || '')
+  const [previewCode, setPreviewCode] = useState(location.state?.code || '')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resendMsg, setResendMsg] = useState('')
@@ -31,7 +32,11 @@ export default function VerifyEmail() {
     setError('')
     setResendMsg('')
     try {
-      await api.post('/api/auth/resend-code', { email })
+      const res = await api.post('/api/auth/resend-code', { email })
+      if (res.data?.code) {
+        setCode(res.data.code)
+        setPreviewCode(res.data.code)
+      }
       setResendMsg('Code resent.')
     } catch (err) {
       if (err.response?.status === 429) {
@@ -58,6 +63,18 @@ export default function VerifyEmail() {
 
         {error && <p className="text-red-600 dark:text-red-400 text-sm mb-3">{error}</p>}
         {resendMsg && <p className="text-green-600 dark:text-green-400 text-sm mb-3">{resendMsg}</p>}
+
+        {previewCode && (
+          <div className="border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 p-3 mb-3 text-xs text-blue-900 dark:text-blue-200">
+            <span className="font-semibold">Verification Code:</span>{' '}
+            <span className="font-mono font-bold tracking-widest text-sm text-blue-600 dark:text-blue-400">
+              {previewCode}
+            </span>
+            <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
+              Code has been auto-filled below. You can also check your email.
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input

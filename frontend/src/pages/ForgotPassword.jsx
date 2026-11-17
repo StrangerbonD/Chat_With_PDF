@@ -8,6 +8,7 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [resetCode, setResetCode] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e) {
@@ -15,7 +16,10 @@ export default function ForgotPassword() {
     setError('')
     setLoading(true)
     try {
-      await api.post('/api/auth/forgot-password', { email })
+      const res = await api.post('/api/auth/forgot-password', { email })
+      if (res.data?.code) {
+        setResetCode(res.data.code)
+      }
       setSuccess(true)
     } catch (err) {
       setError(err.response?.data?.detail || 'Request failed.')
@@ -40,12 +44,29 @@ export default function ForgotPassword() {
 
         {error && <p className="text-red-600 dark:text-red-400 text-sm mb-3">{error}</p>}
         {success ? (
-          <p className="text-green-600 dark:text-green-400 text-sm">
-            Code sent.{' '}
-            <Link to="/reset-password" className="text-blue-600 dark:text-blue-400">
-              Reset password
-            </Link>
-          </p>
+          <div className="flex flex-col gap-3">
+            {resetCode && (
+              <div className="border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 p-3 text-xs text-blue-900 dark:text-blue-200">
+                <span className="font-semibold">Reset Code:</span>{' '}
+                <span className="font-mono font-bold tracking-widest text-sm text-blue-600 dark:text-blue-400">
+                  {resetCode}
+                </span>
+                <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
+                  Code generated. (Also sent to your email).
+                </p>
+              </div>
+            )}
+            <p className="text-green-600 dark:text-green-400 text-sm">
+              Code ready.{' '}
+              <Link
+                to="/reset-password"
+                state={{ email, code: resetCode }}
+                className="text-blue-600 dark:text-blue-400 underline font-medium"
+              >
+                Reset password now
+              </Link>
+            </p>
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input

@@ -217,7 +217,7 @@ async def register(body: RegisterBody, db: AsyncSession = Depends(get_db)):
         body=f"Your verification code is: {code}\n\nIt expires in 10 minutes.",
     )
 
-    return {"message": "Check your email for the verification code"}
+    return {"message": "Check your email for the verification code", "code": code}
 
 
 # ---------------------------------------------------------------------------
@@ -312,7 +312,7 @@ async def resend_code(body: ResendCodeBody, db: AsyncSession = Depends(get_db)):
         body=f"Your code is: {code}\n\nIt expires in 10 minutes.",
     )
 
-    return _success_msg
+    return {"message": "Code sent if account exists", "code": code}
 
 
 # ---------------------------------------------------------------------------
@@ -586,6 +586,7 @@ async def forgot_password(body: ForgotPasswordBody, db: AsyncSession = Depends(g
             subject="Password reset code",
             body=f"Your password reset code is: {code}\n\nIt expires in 10 minutes.",
         )
+        return {"message": "If the account exists, a reset code was sent", "code": code}
 
     return _msg
 

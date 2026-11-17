@@ -1,12 +1,17 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import api from '../services/api'
 import { useTheme } from '../context/ThemeContext'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { theme, toggleTheme } = useTheme()
-  const [form, setForm] = useState({ email: '', code: '', new_password: '' })
+  const [form, setForm] = useState({
+    email: location.state?.email || '',
+    code: location.state?.code || '',
+    new_password: '',
+  })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
