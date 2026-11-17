@@ -23,8 +23,11 @@ export function getAccessToken() {
   return accessToken
 }
 
+const rawBaseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const baseURL = String(rawBaseURL).trim().replace(/\/+$/, '')
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL,
   withCredentials: true,
 })
 
