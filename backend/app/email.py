@@ -45,7 +45,7 @@ async def send_email(to: str, subject: str, body: str) -> None:
         try:
             from_addr = s.smtp_from if (s.smtp_from and "@resend.dev" in s.smtp_from) else "onboarding@resend.dev"
             payload = {
-                "from": f"Bondhon Das <{from_addr}>",
+                "from": f"Bondhon Das (bondhondas16@gmail.com) <{from_addr}>",
                 "to": [to],
                 "subject": subject,
                 "text": body,
