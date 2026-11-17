@@ -9,7 +9,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -320,7 +320,12 @@ async def resend_code(body: ResendCodeBody, db: AsyncSession = Depends(get_db)):
 # ---------------------------------------------------------------------------
 
 @router.post("/login")
-async def login(body: LoginBody, response: Response, db: AsyncSession = Depends(get_db)):
+async def login(
+    body: LoginBody,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
     import uuid as _uuid
 
     email = body.email.lower().strip()
@@ -386,6 +391,27 @@ async def login(body: LoginBody, response: Response, db: AsyncSession = Depends(
 
     max_age = settings.refresh_token_days * 24 * 3600
     _set_refresh_cookie(response, refresh_token, max_age)
+
+    # Send login alert email to the user
+    login_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    user_name = user.full_name or "User"
+    email_body = (
+        f"Hello {user_name},\n\n"
+        f"A new login to your Chat with PDF account was detected.\n\n"
+        f"Account: {user.email}\n"
+        f"Time: {login_time}\n\n"
+        f"If this was you, you can safely ignore this notification.\n"
+        f"If you did not initiate this login, please reset your password immediately.\n\n"
+        f"Best regards,\n"
+        f"Bondhon Das (bondhondas16@gmail.com)\n"
+        f"Chat with PDF"
+    )
+    background_tasks.add_task(
+        send_email,
+        to=user.email,
+        subject="Security Notification: Successful Login to Chat with PDF",
+        body=email_body,
+    )
 
     return {"access_token": access_token, "token_type": "bearer"}
 

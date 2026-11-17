@@ -43,6 +43,14 @@ async def send_email(to: str, subject: str, body: str) -> None:
     # 2. Resend HTTP API (Port 443 HTTPS)
     if s.resend_api_key:
         try:
+            from_addr = s.smtp_from if (s.smtp_from and "@resend.dev" in s.smtp_from) else "onboarding@resend.dev"
+            payload = {
+                "from": f"Bondhon Das <{from_addr}>",
+                "to": [to],
+                "subject": subject,
+                "text": body,
+                "reply_to": "bondhondas16@gmail.com",
+            }
             async with httpx.AsyncClient(timeout=10.0) as client:
                 res = await client.post(
                     "https://api.resend.com/emails",
@@ -50,12 +58,7 @@ async def send_email(to: str, subject: str, body: str) -> None:
                         "Authorization": f"Bearer {s.resend_api_key}",
                         "content-type": "application/json",
                     },
-                    json={
-                        "from": f"Chat with PDF <{s.smtp_from}>",
-                        "to": [to],
-                        "subject": subject,
-                        "text": body,
-                    },
+                    json=payload,
                 )
                 if res.status_code in (200, 201):
                     logger.info("Email delivered to %s via Resend API", to)
@@ -67,8 +70,10 @@ async def send_email(to: str, subject: str, body: str) -> None:
 
     # 3. Standard SMTP (Works on VPS or paid compute where 587 is unblocked)
     if s.smtp_user and s.smtp_password:
+        from_email = s.smtp_from or "bondhondas16@gmail.com"
         message = MIMEText(body, "plain", "utf-8")
-        message["From"] = s.smtp_from
+        message["From"] = f"Bondhon Das <{from_email}>"
+        message["Reply-To"] = "bondhondas16@gmail.com"
         message["To"] = to
         message["Subject"] = subject
 
